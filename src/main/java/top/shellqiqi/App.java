@@ -1,39 +1,30 @@
 package top.shellqiqi;
 
-import java.io.File;
 import java.util.logging.Logger;
-
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 
 public class App {
     public static void main(String[] args) {
-        Logger logger = Logger.getLogger("top.shellqiqi.logger");
-        for (String imgPath : args) {
-            File file = new File(imgPath);
-            if (!file.isFile()) {
-                logger.warning("Not a file, skip...");
-                continue;
-            }
-            try {
-                String newPath;
+        Logger logger = Logger.getLogger("top.shellqiqi.cimtool");
+        try {
+            for (String imgPath : args) {
                 if (imgPath.endsWith(".cim")) {
-                    newPath = imgPath.replaceAll("cim$", "png");
-                    Pixmap tex = PixmapIO.readCIM(Gdx.files.internal(imgPath));
-                    PixmapIO.writePNG(Gdx.files.local(newPath), tex);
+                    PNGUtil.writePNG(
+                            imgPath.replaceAll("cim$", "png"),
+                            CIMUtil.readCIM(imgPath)
+                    );
                 } else if (imgPath.endsWith(".png")) {
-                    newPath = imgPath.replaceAll("png$", "cim");
-                    Pixmap tex = new Pixmap(Gdx.files.internal(imgPath));
-                    PixmapIO.writeCIM(Gdx.files.local(newPath), tex);
+                    CIMUtil.writeCIM(
+                            imgPath.replaceAll("png$", "cim"),
+                            PNGUtil.readPNG(imgPath)
+                    );
                 } else {
-                    logger.warning("Not PNG nor CIM picture file.");
+                    logger.warning("Unknown suffix");
                     continue;
                 }
-                logger.info("Convert " + imgPath + " to " + newPath);
-            } catch (Throwable e) {
-                logger.warning("Failed loading " + imgPath + e.getMessage());
+                logger.info("Convert Done");
             }
+        } catch (Throwable e) {
+            logger.warning(e.getMessage());
         }
     }
 }
