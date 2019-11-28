@@ -1,5 +1,6 @@
 package top.shellqiqi;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 
 import java.awt.image.BufferedImage;
@@ -16,14 +17,19 @@ class CIMUtil {
         int width = bufferedImage.getWidth();
         int height = bufferedImage.getHeight();
         int type = BIM2CIMType(bufferedImage.getType());
-        if (type == -1) throw new Exception("Unsupported image type");
+        if (type == -1) throw new Exception("Only supported RGBA8888");
 
         out.writeInt(width);
         out.writeInt(height);
         out.writeInt(type);
-        for (int y = 0; y < height; ++y)
-            for (int x = 0; x < width; ++x)
-                out.writeInt(bufferedImage.getRGB(x, y));
+
+        Color color = new Color();
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                Color.argb8888ToColor(color, bufferedImage.getRGB(x, y));
+                out.writeInt(Color.rgba8888(color));
+            }
+        }
 
         out.close();
     }
@@ -35,12 +41,17 @@ class CIMUtil {
         int width = in.readInt();
         int height = in.readInt();
         int type = CIM2BIMType(in.readInt());
-        if (type == -1) throw new Exception("Unsupported image type");
+        if (type == -1) throw new Exception("Only supported RGBA8888");
 
         BufferedImage bufferedImage = new BufferedImage(width, height, type);
-        for (int y = 0; y < height; ++y)
-            for (int x = 0; x < width; ++x)
-                bufferedImage.setRGB(x, y, in.readInt());
+
+        Color color = new Color();
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                color.set(in.readInt());
+                bufferedImage.setRGB(x, y, Color.argb8888(color));
+            }
+        }
 
         in.close();
         return bufferedImage;
@@ -48,23 +59,16 @@ class CIMUtil {
 
     private static int CIM2BIMType(int cimType) {
         Pixmap.Format format = Pixmap.Format.fromGdx2DPixmapFormat(cimType);
-        if (format == Pixmap.Format.RGB888) {
-            return BufferedImage.TYPE_3BYTE_BGR;
-        } else if (format == Pixmap.Format.RGBA8888) {
+        if (format == Pixmap.Format.RGBA8888)
             return BufferedImage.TYPE_4BYTE_ABGR;
-        } else {
+        else
             return -1;
-        }
     }
 
     private static int BIM2CIMType(int bimType) {
-        switch (bimType) {
-            case BufferedImage.TYPE_3BYTE_BGR:
-                return Pixmap.Format.toGdx2DPixmapFormat(Pixmap.Format.RGB888);
-            case BufferedImage.TYPE_4BYTE_ABGR:
-                return Pixmap.Format.toGdx2DPixmapFormat(Pixmap.Format.RGBA8888);
-            default:
-                return -1;
-        }
+        if (bimType == BufferedImage.TYPE_4BYTE_ABGR)
+            return Pixmap.Format.toGdx2DPixmapFormat(Pixmap.Format.RGBA8888);
+        else
+            return -1;
     }
 }
